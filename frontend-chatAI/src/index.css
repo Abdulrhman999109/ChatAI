@@ -42,7 +42,6 @@ html, body {
   animation-delay: 0.3s;
 }
 
-/* Scrollbar customization */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -55,21 +54,3 @@ html, body {
   background-color: #4b5563;
   border-radius: 10px;
 }
-
-@keyframes waveUpDown {
-  0%, 100% {
-    transform: scaleY(1);
-  }
-  50% {
-    transform: scaleY(1.5);
-  }
-}
-
-.animate-wave {
-  animation-name: waveUpDown;
-  animation-duration: 1s;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-  transform-origin: bottom;
-}
-

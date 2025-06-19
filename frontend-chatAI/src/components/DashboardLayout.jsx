@@ -4,11 +4,9 @@ import { Plus, Trash2, Menu, Pencil } from 'lucide-react';
 import SiteBrand from './SiteBrand';
 
 export default function DashboardLayout() {
-  const [conversations, setConversations] = useState([
-    { id: 'demo1', title: 'Product Inquiry' },
-    { id: 'demo2', title: 'Technical Support' },
-    { id: 'demo3', title: 'General Questions' },
-  ]);
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [editConv, setEditConv] = useState(null);
   const [editTitle, setEditTitle] = useState('');
@@ -17,23 +15,78 @@ export default function DashboardLayout() {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) navigate('/login');
+  }, []);
+
   const cleanTitle = (title) => title?.replace(/^"+|"+$/g, '').trim() || 'New Conversation';
 
-  const createConversation = () => {
-    const newId = `demo${Date.now()}`;
-    const newConv = { id: newId, title: 'New Conversation' };
-    setConversations((prev) => [newConv, ...prev]);
-    navigate(`/dashboard/chat/${newId}`);
+  const fetchConversations = async () => {
+    const token = localStorage.getItem('token');
+    const meRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const meData = await meRes.json();
+    const user_id = meData.user.sub || meData.user.id;
+    const convRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/conversations/${user_id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const convData = await convRes.json();
+    const sorted = Array.isArray(convData)
+      ? convData.sort((a, b) =>
+          new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at)
+        )
+      : [];
+    setConversations(sorted);
+    setLoading(false);
   };
 
-  const updateConversationTitle = (convId) => {
+  useEffect(() => {
+    fetchConversations();
+    const intervalId = setInterval(fetchConversations, 10000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const createConversation = async () => {
+    const token = localStorage.getItem('token');
+    const titleToUse = 'New Conversation';
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/conversations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ title: titleToUse }),
+    });
+    const data = await res.json();
+    const newConv = { id: data.conversation_id, title: titleToUse };
+    setConversations((prev) => [newConv, ...prev]);
+    navigate(`/dashboard/chat/${newConv.id}`);
+  };
+
+  const updateConversationTitle = async (convId) => {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/conversations/${convId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ title: editTitle }),
+    });
+    const data = await res.json();
     setConversations((prev) =>
       prev.map((c) => (c.id === convId ? { ...c, title: editTitle } : c))
     );
     setEditConv(null);
   };
 
-  const deleteConversation = (convId) => {
+  const deleteConversation = async (convId) => {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/conversations/${convId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
     setConversations((prev) => prev.filter((c) => c.id !== convId));
     if (id === convId) navigate('/dashboard');
     setDeleteConv(null);
@@ -59,17 +112,18 @@ export default function DashboardLayout() {
         </button>
       )}
 
+
       <aside
         className={`bg-slate-900 text-white flex flex-col fixed inset-y-0 left-0 w-48 xs:w-56 sm:w-64 transform md:relative z-20 transition-transform duration-300 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
-        <div className="sticky top-0 z-20 bg-slate-900 dark:bg-gray-900 px-4 py-5 border-b border-gray-800 flex flex-col items-center space-y-3">
+        <div className="sticky top-[env(safe-area-inset-top,0px)] z-20 bg-slate-900 dark:bg-gray-900 px-4 py-5 border-b border-gray-800 flex flex-col items-center space-y-3">
           <SiteBrand />
           <button
-            onClick={() => {
+            onClick={async () => {
               setSidebarOpen(false);
-              createConversation();
+              await createConversation();
             }}
             className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#00E3B2] to-[#7C5EFF] hover:opacity-90 text-white py-2 px-4 rounded-lg w-full"
           >
@@ -78,6 +132,9 @@ export default function DashboardLayout() {
         </div>
 
         <div className="overflow-y-auto flex-1 px-4 py-4 bg-slate-900 dark:bg-gray-900 custom-scrollbar">
+          {loading && <div className="text-gray-400 text-center">Loading...</div>}
+          {error && <div className="text-red-400 text-center">{error}</div>}
+
           <div className="space-y-3">
             {conversations.map((conv) => (
               <div
@@ -109,17 +166,21 @@ export default function DashboardLayout() {
               </div>
             ))}
           </div>
+
           <button
-        onClick={() => navigate('/login')}
-        className="mt-6 w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg"
-      >
-        Log Out
-      </button>
+            onClick={() => {
+              localStorage.clear();
+              navigate('/login');
+            }}
+            className="mt-6 w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg"
+          >
+            Log Out
+          </button>
         </div>
       </aside>
 
       <main className="flex-1 overflow-y-auto dark:bg-gray-950">
-        <Outlet context={{ title: currentChat?.title || 'New Conversation' }} />
+        <Outlet context={{ title: currentChat?.title || 'New Conversation', fetchConversations }} />
       </main>
 
       {editConv && (
@@ -172,9 +233,7 @@ export default function DashboardLayout() {
               </button>
             </div>
           </div>
-          
         </div>
-        
       )}
     </div>
   );

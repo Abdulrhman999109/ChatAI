@@ -9,11 +9,42 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-  e.preventDefault();
-  navigate('/dashboard');
-};
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ username, password }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Login failed');
+
+      localStorage.setItem('token', data.token);
+
+      const convRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${data.token}`,
+        },
+        body: JSON.stringify({ title: 'New Conversation' }),
+      });
+
+      const convData = await convRes.json();
+      if (!convRes.ok) throw new Error(convData.detail || 'Failed to create conversation');
+
+      navigate(`/dashboard/chat/${convData.conversation_id}`);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#00E3B2] to-[#7C5EFF] dark:from-slate-900 dark:to-slate-800 px-4">
