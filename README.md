@@ -12,7 +12,7 @@ ChatAI/
 ├── frontend-chatAI/     # React frontend
 ├── backend-chatAI/      # FastAPI backend
 ```
-## 🛠 Requirements
+## Requirements
 
 - Node.js 18+
 - Python 3.10+
