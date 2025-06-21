@@ -22,22 +22,24 @@ ChatAI/
 ---
 
 ##  Installation
-
+```bash
 git clone https://github.com/Abdulrhman999109/ChatAI.git
 cd ChatAI
+```
 ---
 
 ### Setup the frontend
-
+```bash
 cd frontend-chatAI
 npm install
+```
 ---
 
 ### Setup the backend
-
+```bash
 cd backend-chatAI
 pip install -r requirements.txt
-
+```
 ---
 
 ##  Environment Variables
@@ -58,17 +60,17 @@ VITE_API_BASE_URL=http://localhost:8000
 ## Run the App
 
 ### Backend
+```bash
 cd backend-chatAI
 uvicorn main:app --reload
-
+```
 
 ### Frontend
+```bash
 cd frontend-chatAI
 npm run dev
-
+```
 ---
 
-
----
 
 **Note:** This project is customizable — feel free to adjust keys, colors, or branding as needed.
