@@ -45,16 +45,18 @@ pip install -r requirements.txt
 ##  Environment Variables
 
 ### backend-chatAI/.env
+```bash
 OPENAI_API_KEY=your_openai_key
 JWT_SECRET_KEY=your_secret_key
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your_supabase_key
 ASSEMBLYAI_API_KEY=your_assemblyai_key
-
+```
 
 ### frontend-chatAI/.env
+```bash
 VITE_API_BASE_URL=http://localhost:8000
-
+```
 ---
 
 ## Run the App
